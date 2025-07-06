@@ -1,0 +1,17 @@
+FROM node:20
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files and install all dependencies (including devDependencies)
+COPY package*.json ./
+RUN npm install
+
+# Copy the rest of your app
+COPY . .
+
+# Expose the port
+EXPOSE 3000
+
+# Use npm script for better readability and maintenance
+CMD ["npm", "run", "dev"]

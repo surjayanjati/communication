@@ -1,0 +1,116 @@
+version: "3.8"
+
+services:
+  auth-service:
+    build:
+      context: ./authService
+      dockerfile: Dockerfile.dev
+    container_name: auth-service
+    depends_on:
+      - auth-db
+    environment:
+      - MONGODB_URI=mongodb://auth-db:27017/auth-db
+    volumes:
+      - ./authService:/app
+      - /app/node_modules
+    command: npm run dev
+    networks:
+      - app-network
+
+  auth-db:
+    image: mongo
+    container_name: auth-db
+    ports:
+      - "27017:27017"
+    volumes:
+      - auth-db-data:/data/db
+    networks:
+      - app-network
+
+  meeting-service:
+    build:
+      context: ./meetingService
+      dockerfile: Dockerfile.dev
+    container_name: meeting-service
+    depends_on:
+      - meeting-db
+      - rabbitmq
+    environment:
+      - MONGODB_URI=mongodb://meeting-db:27017/meeting-db
+      - RABBITMQ_URI=amqp://guest:guest@rabbitmq:5672
+    volumes:
+      - ./meetingService:/app
+      - /app/node_modules
+    command: npm run dev
+    networks:
+      - app-network
+
+  meeting-db:
+    image: mongo
+    container_name: meeting-db
+    ports:
+      - "27018:27017"
+    volumes:
+      - meeting-db-data:/data/db
+    networks:
+      - app-network
+
+  notification-service:
+    build:
+      context: ./notificationService
+      dockerfile: Dockerfile.dev
+    container_name: notification-service
+    depends_on:
+      - notification-db
+      - rabbitmq
+      - meeting-service
+    environment:
+      - MONGODB_URI=mongodb://notification-db:27017/notification-db
+      - RABBITMQ_URI=amqp://guest:guest@rabbitmq:5672
+    volumes:
+      - ./notificationService:/app
+      - /app/node_modules
+    command: npm run dev
+    networks:
+      - app-network
+
+  notification-db:
+    image: mongo
+    container_name: notification-db
+    ports:
+      - "27019:27017"
+    volumes:
+      - notification-db-data:/data/db
+    networks:
+      - app-network
+
+  nginx: # ✅ Make sure this is inside `services`
+    build:
+      context: ./nginx
+    container_name: nginx-reverse-proxy
+    ports:
+      - "80:80"
+    depends_on:
+      - auth-service
+      - meeting-service
+      - notification-service
+    networks:
+      - app-network
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - app-network
+
+volumes:
+  auth-db-data:
+  meeting-db-data:
+  notification-db-data:
+
+networks:
+  app-network:

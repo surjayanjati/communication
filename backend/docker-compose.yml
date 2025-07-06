@@ -1,0 +1,82 @@
+version: "3.8"
+
+services:
+  # AUTH - SERVICE CODE ------------------------------
+  auth-service:
+    build: ./authService
+    container_name: auth-service
+    ports:
+      - "3000:3000"
+    depends_on:
+      - auth-db
+    environment:
+      - MONGODB_URI=mongodb://auth-db:27017/auth-db
+    networks:
+      - app-network
+
+  auth-db:
+    image: mongo
+    container_name: auth-db
+    ports:
+      - "27017:27017"
+    volumes:
+      - auth-db-data:/data/db
+    networks:
+      - app-network
+
+  # Metting service ---------------------------------------------/
+
+  meeting-service:
+    build: ./meetingService
+    container_name: meeting-service
+    ports:
+      - "4000:4000"
+    depends_on:
+      - meeting-db
+    environment:
+      - MONGODB_URI=mongodb://meeting-db:27017/meeting-db
+    networks:
+      - app-network
+
+  meeting-db:
+    image: mongo
+    container_name: meeting-db
+    ports:
+      - "27018:27017"
+    volumes:
+      - meeting-db-data:/data/db
+    networks:
+      - app-network
+
+  # notification service ------------------------------------------------/
+  notification-service:
+    build: ./notificationService
+    container_name: notification-service
+    ports:
+      - "5000:5000"
+    depends_on:
+      - notification-db
+    environment:
+      - MONGODB_URI=mongodb://notification-db:27017/notification-db
+    networks:
+      - app-network
+
+  notification-db:
+    image: mongo
+    container_name: notification-db
+    ports:
+      - "27019:27017"
+    volumes:
+      - notification-db-data:/data/db
+    networks:
+      - app-network
+
+#volumes ---------------------------------------------------------------------------/
+volumes:
+  auth-db-data:
+  meeting-db-data:
+  notification-db-data:
+
+#networks ---------------------------------------------------------------------------
+networks:
+  app-network:
